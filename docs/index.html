@@ -6,6 +6,10 @@
   <title>ADSR Echo | Professional Multi-Effect Plugin</title>
   <meta name="description" content="ADSR Echo — Free, open-source multi-effect VST3/AU plugin with modular reverb, delay, EQ, compression, and convolution.">
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
     /* ============================================================
        BASE RESET & VARIABLES
@@ -29,9 +33,13 @@
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
       overflow-x: hidden;
       min-height: 100vh;
+    }
+
+    h1, h2, h3 {
+      font-family: 'Orbitron', 'Segoe UI', sans-serif;
     }
 
     /* ============================================================
@@ -43,6 +51,16 @@
       width: 100%; height: 100%;
       z-index: 0;
       opacity: 0.55;
+    }
+
+    #bpm-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      mix-blend-mode: color;
+      opacity: 0;
+      transition: none;
     }
 
     /* Radial vignette to darken edges and improve readability */
@@ -94,6 +112,7 @@
     }
 
     .nav-brand-name {
+      font-family: 'Orbitron', sans-serif;
       font-size: 1.1rem;
       font-weight: 800;
       letter-spacing: 0.14em;
@@ -140,6 +159,7 @@
       margin-bottom: 36px;
       animation: float 7s ease-in-out infinite;
     }
+
 
     @keyframes float {
       0%, 100% { transform: translateY(0px); }
@@ -266,6 +286,171 @@
     }
 
     /* ============================================================
+       SCROLL REVEAL ANIMATIONS
+    ============================================================ */
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .reveal-left {
+      opacity: 0;
+      transform: translateX(-60px);
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal-left.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .reveal-right {
+      opacity: 0;
+      transform: translateX(60px);
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal-right.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .reveal-scale {
+      opacity: 0;
+      transform: scale(0.9);
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal-scale.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+    .reveal-delay-4 { transition-delay: 0.4s; }
+
+    /* ============================================================
+       FEATURE SECTIONS — INDIVIDUAL LAYOUTS
+    ============================================================ */
+    .section-label {
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 600;
+      font-size: 0.78rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .section-desc {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.75;
+      max-width: 560px;
+    }
+
+    .section-centered .section-desc {
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .split-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: center;
+    }
+
+    .split-layout.reverse {
+      direction: rtl;
+    }
+
+    .split-layout.reverse > * {
+      direction: ltr;
+    }
+
+    .detail-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 22px 24px;
+      backdrop-filter: blur(5px);
+      transition: transform 0.25s ease, border-color 0.25s ease;
+    }
+
+    .detail-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(0, 170, 255, 0.45);
+    }
+
+    .detail-card h4 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--blue-bright);
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+    }
+
+    .detail-card p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    .detail-pair {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .spec-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .spec-tag {
+      background: rgba(0, 150, 255, 0.08);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.75rem;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 600;
+      color: var(--blue-bright);
+      letter-spacing: 0.04em;
+    }
+
+    .three-col {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .section-sep {
+      width: 100%;
+      max-width: 1160px;
+      margin: 0 auto;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+    }
+
+    /* ============================================================
        STATS STRIP
     ============================================================ */
     .stats-strip {
@@ -287,6 +472,7 @@
     }
 
     .stat-value {
+      font-family: 'Orbitron', sans-serif;
       font-size: 2.2rem;
       font-weight: 800;
       color: var(--blue-bright);
@@ -362,11 +548,18 @@
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 36px 32px;
-      width: 210px;
+      padding: 36px 24px;
+      width: 220px;
       text-align: center;
       transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
       backdrop-filter: blur(5px);
+      box-sizing: border-box;
+    }
+
+    .dl-card .btn {
+      max-width: 100%;
+      box-sizing: border-box;
+      white-space: nowrap;
     }
 
     .dl-card:hover {
@@ -376,9 +569,14 @@
     }
 
     .dl-card .os-icon {
-      font-size: 2.8rem;
       display: block;
       margin-bottom: 12px;
+      height: 48px;
+    }
+
+    .dl-card .os-icon svg {
+      width: 48px;
+      height: 48px;
     }
 
     .dl-card h3 {
@@ -414,62 +612,112 @@
     }
 
     /* ============================================================
-       AUTOPLAY NOTICE OVERLAY
+       WELCOME OVERLAY
     ============================================================ */
-    #autoplay-overlay {
+    #welcome-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 1, 6, 0.88);
-      backdrop-filter: blur(10px);
+      background: rgba(0, 1, 6, 0.92);
+      backdrop-filter: blur(14px);
       z-index: 500;
       display: flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
-      transition: opacity 0.4s ease;
+      transition: opacity 0.5s ease;
     }
 
-    #autoplay-overlay.hidden {
+    #welcome-overlay.hidden {
       opacity: 0;
       pointer-events: none;
     }
 
-    .autoplay-box {
-      text-align: center;
-      padding: 48px 40px;
-    }
-
-    .autoplay-ring {
-      width: 88px;
-      height: 88px;
-      border: 2px solid var(--blue);
-      border-radius: 50%;
-      margin: 0 auto 28px;
+    #intro-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10001;
+      background: #020202;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 2rem;
-      color: var(--blue-bright);
-      animation: pulse 2.2s ease-in-out infinite;
-      box-shadow: 0 0 0 0 rgba(0,170,255,0.4);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease;
     }
 
-    @keyframes pulse {
-      0%, 100% { box-shadow: 0 0 0 0   rgba(0,170,255,0.5); transform: scale(1); }
-      50%       { box-shadow: 0 0 0 24px rgba(0,170,255,0);   transform: scale(1.04); }
+    #intro-video-overlay::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0.06;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+      pointer-events: none;
+      z-index: 1;
     }
 
-    .autoplay-box h2 {
-      font-size: 1.6rem;
+    #intro-video-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+      box-shadow:
+        inset 0 0 120px 40px rgba(0, 100, 255, 0.15),
+        inset 0 0 300px 80px rgba(0, 60, 200, 0.08);
+    }
+
+    #intro-video-overlay.fadeout {
+      opacity: 0;
+      transition: opacity 1.5s ease;
+    }
+
+    #intro-video-overlay video {
+      height: 100vh;
+      width: auto;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Site starts hidden behind a black cover, fades in when overlay dismissed */
+    .site-hidden {
+      opacity: 0;
+    }
+
+    .site-fadein {
+      opacity: 1;
+      transition: opacity 7.0s ease;
+    }
+
+    .welcome-box {
+      text-align: center;
+      padding: 56px 48px;
+      max-width: 520px;
+    }
+
+    .welcome-logo {
+      width: 160px;
+      height: auto;
+      margin: 0 auto 24px;
+      display: block;
+    }
+
+    .welcome-box h2 {
+      font-size: 1.9rem;
       font-weight: 700;
       color: var(--blue-bright);
       letter-spacing: 0.06em;
       margin-bottom: 8px;
     }
 
-    .autoplay-box p {
-      font-size: 0.9rem;
+    .welcome-box p {
+      font-size: 0.95rem;
       color: var(--text-muted);
+      margin-bottom: 28px;
+      line-height: 1.6;
+    }
+
+    .welcome-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
     }
 
     /* ============================================================
@@ -732,6 +980,9 @@
       .p-info { min-width: 100px; max-width: 130px; }
       input[type="range"].p-vol-slider { width: 52px; }
       #music-player { padding: 0 10px; gap: 8px; }
+      .split-layout { grid-template-columns: 1fr; gap: 32px; }
+      .split-layout.reverse { direction: ltr; }
+      .three-col { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -741,23 +992,36 @@
      WEBGL FRACTAL BACKGROUND
 ============================================================ -->
 <canvas id="fractal-canvas"></canvas>
+<div id="bpm-overlay"></div>
 <div id="bg-vignette"></div>
 
 <!-- ============================================================
-     AUTOPLAY OVERLAY
+     INTRO VIDEO OVERLAY
 ============================================================ -->
-<div id="autoplay-overlay" onclick="dismissOverlay()">
-  <div class="autoplay-box">
-    <div class="autoplay-ring">▶</div>
-    <h2>Enter the Echo</h2>
-    <p>Click anywhere to begin</p>
+<div id="intro-video-overlay">
+  <video src="vid2.mp4" id="intro-video" muted playsinline preload="auto"></video>
+</div>
+
+<!-- ============================================================
+     WELCOME OVERLAY
+============================================================ -->
+<div id="welcome-overlay">
+  <div class="welcome-box">
+    <img src="logo.png" alt="ADSR Echo" class="welcome-logo" onerror="this.style.display='none'">
+    <h2>ADSR Echo</h2>
+    <p>Professional modular multi-effect plugin with reverb, delay, convolution, EQ, and compression.</p>
+    <div class="welcome-actions">
+      <button class="btn btn-primary" onclick="enterSite()" style="width:220px;">Enter Site</button>
+      <a href="https://github.com/charlesjorge357/ADSREchoVST" target="_blank" rel="noopener"
+         class="btn btn-outline" style="width:220px;">View on GitHub</a>
+    </div>
   </div>
 </div>
 
 <!-- ============================================================
      NAVIGATION
 ============================================================ -->
-<nav>
+<nav class="site-hidden">
   <a href="#home" class="nav-brand">
     <img src="logo.png" alt="ADSR Echo" onerror="this.style.display='none'">
     <span class="nav-brand-name">ADSR Echo</span>
@@ -772,7 +1036,7 @@
 <!-- ============================================================
      PAGE CONTENT
 ============================================================ -->
-<main class="page">
+<main class="page site-hidden">
 
   <!-- HERO -->
   <section class="hero" id="home">
@@ -791,113 +1055,235 @@
 
   <!-- STATS STRIP -->
   <div class="stats-strip">
-    <div class="stat-box">
+    <div class="stat-box reveal reveal-delay-1">
       <span class="stat-value">2</span>
       <span class="stat-label">Parallel Chains</span>
     </div>
-    <div class="stat-box">
+    <div class="stat-box reveal reveal-delay-2">
       <span class="stat-value">8</span>
       <span class="stat-label">Slots Per Chain</span>
     </div>
-    <div class="stat-box">
-      <span class="stat-value">40+</span>
+    <div class="stat-box reveal reveal-delay-3">
+      <span class="stat-value">45</span>
       <span class="stat-label">Impulse Responses</span>
     </div>
-    <div class="stat-box">
-      <span class="stat-value">5</span>
-      <span class="stat-label">Effect Types</span>
+    <div class="stat-box reveal reveal-delay-4">
+      <span class="stat-value">6</span>
+      <span class="stat-label">Effect Modules</span>
     </div>
   </div>
 
-  <!-- FEATURES -->
-  <div class="section" id="features">
-    <div class="section-head">
-      <h2>What's Inside</h2>
-      <p>Every tool you need — nothing you don't</p>
+  <!-- MODULAR ARCHITECTURE -->
+  <div class="section section-centered" id="features">
+    <div class="section-head reveal">
+      <span class="section-label">Signal Architecture</span>
+      <h2>Modular Effect Chains</h2>
+      <p>Build your sound from the ground up</p>
       <div class="divider"></div>
     </div>
-    <div class="features-grid">
-      <div class="feature-card">
-        <span class="feature-icon">🌊</span>
-        <h3>Algorithmic Reverb</h3>
-        <p>Two premium algorithms: <strong style="color:var(--text)">Datorro Hall</strong> for lush, organic room simulation and <strong style="color:var(--text)">Hybrid Plate</strong> for dense, smooth reflections.</p>
+    <p class="section-desc reveal" style="text-align:center; margin: 0 auto 32px;">
+      Two fully independent processing chains run in parallel, each holding up to 8 effect slots.
+      Drop any combination of reverb, delay, EQ, compression, or convolution into any slot.
+      Reorder in real time. Switch between parallel and serial routing on the fly.
+    </p>
+    <div class="spec-list reveal" style="justify-content:center;">
+      <span class="spec-tag">2 Parallel Chains</span>
+      <span class="spec-tag">8 Slots Per Chain</span>
+      <span class="spec-tag">Real-Time Reorder</span>
+      <span class="spec-tag">Parallel / Serial</span>
+      <span class="spec-tag">Per-Slot Bypass</span>
+    </div>
+  </div>
+
+  <div class="section-sep"></div>
+
+  <!-- REVERB -->
+  <div class="section">
+    <div class="split-layout">
+      <div>
+        <span class="section-label reveal">Reverb Engines</span>
+        <h2 class="reveal" style="color:var(--blue-bright); margin-bottom:16px;">Two Algorithms. Infinite Space.</h2>
+        <p class="section-desc reveal">
+          Choose between a lush Datorro Hall reverb with LFO-modulated diffusion for organic,
+          evolving tails — or a dense Hybrid Plate for tight, smooth reflections that sit
+          perfectly in a mix.
+        </p>
+        <div class="spec-list reveal">
+          <span class="spec-tag">4-Channel FDN</span>
+          <span class="spec-tag">Stereo Cross-Coupling</span>
+          <span class="spec-tag">6-Tap Early Reflections</span>
+          <span class="spec-tag">LFO Modulation</span>
+          <span class="spec-tag">Psychoacoustic Damping</span>
+        </div>
       </div>
-      <div class="feature-card">
-        <span class="feature-icon">⏱</span>
-        <h3>Advanced Delay</h3>
-        <p>BPM-synced delay with <strong style="color:var(--text)">Normal</strong>, <strong style="color:var(--text)">Ping-Pong</strong>, and <strong style="color:var(--text)">Inverted</strong> modes. Per-tail lowpass and highpass feedback filtering.</p>
+      <div class="detail-pair">
+        <div class="detail-card reveal reveal-delay-1">
+          <h4>Datorro Hall</h4>
+          <p>Cascaded allpass diffusion network with stereo cross-feed and gentle LFO modulation.
+             Rich, expansive spaces from small rooms to vast cathedrals.</p>
+        </div>
+        <div class="detail-card reveal reveal-delay-2">
+          <h4>Hybrid Plate</h4>
+          <p>Combines early diffusion with a feedback delay network and subtle modulation.
+             High-shelf filtering tames harshness for naturally warm, dense tails.</p>
+        </div>
       </div>
-      <div class="feature-card">
-        <span class="feature-icon">🎙</span>
-        <h3>Convolution Reverb</h3>
-        <p>40+ built-in IRs — churches, concert halls, caves, studios, and cabinets. Load your own custom IR files for infinite spaces.</p>
+    </div>
+  </div>
+
+  <div class="section-sep"></div>
+
+  <!-- DELAY -->
+  <div class="section">
+    <div class="split-layout reverse">
+      <div>
+        <span class="section-label reveal">Delay Engine</span>
+        <h2 class="reveal" style="color:var(--blue-bright); margin-bottom:16px;">Precision Delay. Three Modes.</h2>
+        <p class="section-desc reveal">
+          BPM-synced delay with 14 note-value divisions, from whole notes to 1/32 triplets.
+          Per-tail lowpass and highpass filtering lets you shape the decay character
+          independently of the dry signal.
+        </p>
+        <div class="spec-list reveal">
+          <span class="spec-tag">BPM Sync</span>
+          <span class="spec-tag">14 Note Divisions</span>
+          <span class="spec-tag">Feedback Filtering</span>
+        </div>
       </div>
-      <div class="feature-card">
-        <span class="feature-icon">🎛</span>
-        <h3>3-Band EQ</h3>
-        <p>Parametric equalizer with fully independent low, mid, and high band control. Sculpt the tonal character of any effect.</p>
+      <div class="three-col">
+        <div class="detail-card reveal reveal-delay-1">
+          <h4>Normal</h4>
+          <p>Classic stereo delay with independent left/right timing and feedback control.</p>
+        </div>
+        <div class="detail-card reveal reveal-delay-2">
+          <h4>Ping-Pong</h4>
+          <p>Alternating left-right bouncing for wide stereo movement and rhythmic interest.</p>
+        </div>
+        <div class="detail-card reveal reveal-delay-3">
+          <h4>Inverted</h4>
+          <p>Phase-inverted feedback creates hollow, ethereal textures and comb-filter effects.</p>
+        </div>
       </div>
-      <div class="feature-card">
-        <span class="feature-icon">📉</span>
-        <h3>Optical Compressor</h3>
-        <p>Smooth optical-style compression with natural dynamic response — tames transients without harshness or pumping artifacts.</p>
+    </div>
+  </div>
+
+  <div class="section-sep"></div>
+
+  <!-- CONVOLUTION & IMPULSE RESPONSES -->
+  <div class="section">
+    <div class="split-layout">
+      <div>
+        <span class="section-label reveal">Convolution Engine</span>
+        <h2 class="reveal" style="color:var(--blue-bright); margin-bottom:16px;">Real Spaces. Real Sound.</h2>
+        <p class="section-desc reveal">
+          Drop your signal into any of 45 meticulously captured impulse responses. Each one is
+          a precise acoustic fingerprint of an actual physical space.
+        </p>
+        <p class="section-desc reveal">
+          Load your own custom IR files to place your audio in any space imaginable. A parking
+          garage, a shipping container, the inside of a piano - if you can capture it, ADSR Echo can convolve it.
+        </p>
+        <div class="spec-list reveal">
+          <span class="spec-tag">45 Built-In IRs</span>
+          <span class="spec-tag">FFT Convolution</span>
+          <span class="spec-tag">Custom IR Loading</span>
+          <span class="spec-tag">Zero-Latency Processing</span>
+        </div>
       </div>
-      <div class="feature-card">
-        <span class="feature-icon">⛓</span>
-        <h3>Modular Effect Chain</h3>
-        <p>Two parallel processing chains, up to 8 slots each. Stack, reorder, bypass, or combine any effects in any configuration you want.</p>
+      <div class="detail-pair">
+        <div class="detail-card reveal reveal-delay-1">
+          <h4>Captured Environments</h4>
+          <p>Grand cathedrals, concert halls, underground caves, recording studios, and guitar
+             cabinets — each impulse response preserves the exact reflection pattern, decay curve,
+             and tonal coloring of the original space.</p>
+        </div>
+        <div class="detail-card reveal reveal-delay-2">
+          <h4>Custom IR Import</h4>
+          <p>Load any WAV impulse response file directly into the signal chain. Stack convolution
+             with algorithmic reverb and delay across the dual processing chains for hybrid spaces
+             that don't exist in the real world.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-sep"></div>
+
+  <!-- SHAPE & CONTROL -->
+  <div class="section">
+    <div class="split-layout">
+      <div>
+        <span class="section-label reveal">Tone Shaping</span>
+        <h2 class="reveal" style="color:var(--blue-bright); margin-bottom:16px;">Shape &amp; Control</h2>
+        <p class="section-desc reveal">
+          Sculpt the tonal character of your effect chain with a 3-band parametric EQ,
+          then tame dynamics with a smooth optical compressor. Place either
+          anywhere in the signal chain.
+        </p>
+      </div>
+      <div class="detail-pair">
+        <div class="detail-card reveal reveal-delay-1">
+          <h4>3-Band Parametric EQ</h4>
+          <p>Low shelf (20–500 Hz), mid peak (200 Hz–8 kHz), high shelf (2–20 kHz).
+             Each band offers a full 24 dB range for surgical or dramatic shaping.</p>
+        </div>
+        <div class="detail-card reveal reveal-delay-2">
+          <h4>Optical Compressor</h4>
+          <p>Frequency-weighted detection with a soft-knee design and dynamic time constants.
+             Tames transients naturally without pumping or harsh artifacts.</p>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- DOWNLOAD -->
   <div class="section" id="download">
-    <div class="section-head">
+    <div class="section-head reveal">
       <h2>Download</h2>
       <p>Free forever &nbsp;·&nbsp; Open source under GPLv3</p>
       <div class="divider"></div>
     </div>
     <div class="download-cards">
 
-      <div class="dl-card">
-        <span class="os-icon">🪟</span>
+      <div class="dl-card reveal reveal-delay-1">
+        <span class="os-icon"><svg viewBox="0 0 24 24" fill="rgba(0,170,255,0.85)"><path d="M3 12.5h8V21H3v-8.5zm0-9.5h8v8.5H3V3zm10 0h8v8.5h-8V3zm0 9.5h8V21h-8v-8.5z"/></svg></span>
         <h3>Windows</h3>
         <div class="formats">VST3 &nbsp;·&nbsp; x64</div>
         <span class="dl-badge">Windows 10+</span><br>
         <a href="https://github.com/charlesjorge357/ADSREchoVST/releases/latest"
            target="_blank" rel="noopener"
-           class="btn btn-primary" style="padding:10px 18px; font-size:0.8rem;">
+           class="btn btn-primary" style="padding:8px 12px; font-size:0.7rem;">
           ⬇ &nbsp;Download .exe
         </a>
       </div>
 
-      <div class="dl-card">
-        <span class="os-icon">🍎</span>
+      <div class="dl-card reveal reveal-delay-2">
+        <span class="os-icon"><svg viewBox="0 0 24 24" fill="rgba(0,170,255,0.85)"><path d="M18.7 19.4c-.7 1-1.4 2-2.6 2-1.1 0-1.5-.7-2.8-.7s-1.7.7-2.9.7c-1.1 0-2-1.1-2.7-2.1C6 16.8 4.8 13.4 6.6 11.1c.9-1.2 2.3-1.9 3.6-1.9 1.1 0 2.1.8 2.8.8.7 0 1.9-.9 3.2-.8.5 0 2.1.2 3.1 1.6-2 1.2-1.7 4.3.4 5.2-.5 1.3-1.1 2.5-1.7 3.3h.7zM15.3 3c-1.7.1-3.2 1.8-3 3.4 1.5.1 3.1-1.5 3-3.4z"/></svg></span>
         <h3>macOS</h3>
         <div class="formats">VST3 + AU &nbsp;·&nbsp; Universal</div>
         <span class="dl-badge">macOS 10.13+</span><br>
         <a href="https://github.com/charlesjorge357/ADSREchoVST/releases/latest"
            target="_blank" rel="noopener"
-           class="btn btn-primary" style="padding:10px 18px; font-size:0.8rem;">
+           class="btn btn-primary" style="padding:8px 12px; font-size:0.7rem;">
           ⬇ &nbsp;Download .pkg
         </a>
       </div>
 
-      <div class="dl-card">
-        <span class="os-icon">🐧</span>
+      <div class="dl-card reveal reveal-delay-3">
+        <span class="os-icon"><svg viewBox="0 0 24 24" fill="rgba(0,170,255,0.85)"><path d="M12 2C9.8 2 8 4.1 8 6.7c0 1.3.5 2.5 1.2 3.3-.9 1.2-1.7 2.8-2 4.5-.4 2.2.2 4.2 1.5 5.3.6.5 1.3.7 2 .7.5 0 .9-.1 1.3-.3.5.2 1 .3 1.5.3s1-.1 1.5-.3c.4.2.8.3 1.3.3.7 0 1.4-.2 2-.7 1.3-1.1 1.9-3.1 1.5-5.3-.3-1.7-1.1-3.3-2-4.5.7-.8 1.2-2 1.2-3.3C17 4.1 15.2 2 13 2h-1zm-1 5.5c-.4 0-.8-.5-.8-1s.4-1 .8-1 .8.5.8 1-.4 1-.8 1zm3 0c-.4 0-.8-.5-.8-1s.4-1 .8-1 .8.5.8 1-.4 1-.8 1z"/></svg></span>
         <h3>Linux</h3>
         <div class="formats">VST3 &nbsp;·&nbsp; x64</div>
         <span class="dl-badge">Ubuntu 20.04+</span><br>
         <a href="https://github.com/charlesjorge357/ADSREchoVST/releases/latest"
            target="_blank" rel="noopener"
-           class="btn btn-outline" style="padding:10px 18px; font-size:0.8rem;">
+           class="btn btn-outline" style="padding:8px 12px; font-size:0.7rem;">
           ⬇ &nbsp;Download .tar.gz
         </a>
       </div>
 
     </div>
 
-    <p class="daw-compat">
+    <p class="daw-compat reveal">
       Compatible with <strong style="color:var(--text)">FL Studio</strong>,
       <strong style="color:var(--text)">Ableton Live</strong>,
       <strong style="color:var(--text)">Reaper</strong>,
@@ -912,7 +1298,7 @@
 <!-- ============================================================
      FOOTER
 ============================================================ -->
-<footer>
+<footer class="site-hidden">
   <p>ADSR Echo &nbsp;·&nbsp; Open Source &nbsp;·&nbsp;
      <a href="https://github.com/charlesjorge357/ADSREchoVST" target="_blank" rel="noopener">GitHub</a>
      &nbsp;·&nbsp; GPLv3 License</p>
@@ -922,7 +1308,7 @@
 <!-- ============================================================
      MUSIC PLAYER BAR
 ============================================================ -->
-<div id="music-player">
+<div id="music-player" class="site-hidden">
   <div class="p-info">
     <span class="p-title" id="p-title">No Track</span>
     <span class="p-artist" id="p-artist">—</span>
@@ -1104,24 +1490,59 @@ document.addEventListener('click', e => {
 });
 
 /* ==============================================================
-   AUTOPLAY OVERLAY
+   WELCOME OVERLAY
 ============================================================== */
-const overlay = document.getElementById('autoplay-overlay');
+const welcomeOverlay = document.getElementById('welcome-overlay');
 
-function dismissOverlay() {
-  overlay.classList.add('hidden');
-  if (PLAYLIST.length) loadTrack(0, true);
+function enterSite() {
+  // hide the welcome popup
+  welcomeOverlay.classList.add('hidden');
+
+  const introOverlay = document.getElementById('intro-video-overlay');
+  const introVid = document.getElementById('intro-video');
+
+  if (introOverlay && introVid) {
+    // show black screen with video
+    introOverlay.classList.add('active');
+
+    introVid.currentTime = 0;
+    introVid.playbackRate = 2.0;
+    introVid.play().catch(() => {});
+
+    // when video ends, fade out intro and reveal the site
+    introVid.addEventListener('ended', function onEnd() {
+      introVid.removeEventListener('ended', onEnd);
+      introOverlay.classList.add('fadeout');
+
+      // reveal site content behind it
+      document.querySelectorAll('.site-hidden').forEach(el => {
+        el.classList.remove('site-hidden');
+        el.classList.add('site-fadein');
+      });
+
+      // remove intro overlay after fade completes
+      setTimeout(() => {
+        introOverlay.style.display = 'none';
+      }, 1600);
+
+      if (PLAYLIST.length) loadTrack(0, true);
+    });
+  } else {
+    // fallback if no video
+    document.querySelectorAll('.site-hidden').forEach(el => {
+      el.classList.remove('site-hidden');
+      el.classList.add('site-fadein');
+    });
+    if (PLAYLIST.length) loadTrack(0, true);
+  }
 }
 
 window.addEventListener('load', () => {
   if (!PLAYLIST.length) {
-    overlay.classList.add('hidden');
+    enterSite();
     return;
   }
   loadTrack(0, false);
-  audio.play()
-    .then(() => { playing = true; syncPlayBtn(); overlay.classList.add('hidden'); })
-    .catch(() => { /* show overlay — browser blocked autoplay */ });
 });
 
 
@@ -1269,6 +1690,103 @@ window.addEventListener('load', () => {
     gl.drawArrays(gl.TRIANGLES, 0, 6);
     requestAnimationFrame(loop);
   })();
+})();
+
+/* ==============================================================
+   SCROLL REVEAL — Intersection Observer
+============================================================== */
+(function () {
+  const revealSelectors = '.reveal, .reveal-left, .reveal-right, .reveal-scale';
+  const revealElements = document.querySelectorAll(revealSelectors);
+
+  if (!revealElements.length) return;
+
+  if (!('IntersectionObserver' in window)) {
+    revealElements.forEach(el => el.classList.add('visible'));
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, {
+    threshold: 0.15,
+    rootMargin: '0px 0px -50px 0px'
+  });
+
+  revealElements.forEach(el => observer.observe(el));
+})();
+
+/* ==============================================================
+   BPM COLOR PULSE — subtle background hue shift at 145 BPM
+============================================================== */
+(function () {
+  const overlay = document.getElementById('bpm-overlay');
+  if (!overlay) return;
+
+  const BPM = 145;
+  const BEAT_HZ = BPM / 60;
+  // palette of deep, moody hues to cycle through
+  const HUES = [210, 270, 340, 600, 50, 120];
+  let hueIndex = 0;
+
+  function pulse(t) {
+    const sec = t / 4200;
+    const beatPhase = (sec * BEAT_HZ) % 1;
+
+    // sharp attack, smooth decay — like a sidechain pulse
+    const intensity = Math.pow(1 - beatPhase, 1);
+
+    // slowly drift through hues over time
+    const driftHue = HUES[Math.floor(sec * BEAT_HZ / 4) % HUES.length];
+    const nextHue = HUES[(Math.floor(sec * BEAT_HZ / 4) + 1) % HUES.length];
+    const blend = (sec * BEAT_HZ / 4) % 1;
+    const hue = driftHue + (nextHue - driftHue) * blend;
+
+    overlay.style.background = `hsla(${hue}, 70%, 30%, 1)`;
+    overlay.style.opacity = intensity * 0.25;
+
+    requestAnimationFrame(pulse);
+  }
+
+  requestAnimationFrame(pulse);
+})();
+
+/* ==============================================================
+   LOGO — REMOVE BLACK BACKGROUND
+============================================================== */
+(function () {
+  function stripBlackBg(img) {
+    if (!img.naturalWidth) return;
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth;
+    c.height = img.naturalHeight;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    const id = ctx.getImageData(0, 0, c.width, c.height);
+    const d = id.data;
+    const threshold = 32;
+    const fadeRange = 30;
+    for (let i = 0; i < d.length; i += 4) {
+      const brightness = (d[i] + d[i + 1] + d[i + 2]) / 3;
+      if (brightness < threshold) {
+        d[i + 3] = 0;
+      } else if (brightness < threshold + fadeRange) {
+        d[i + 3] = Math.floor(((brightness - threshold) / fadeRange) * d[i + 3]);
+      }
+    }
+    ctx.putImageData(id, 0, 0);
+    img.src = c.toDataURL();
+  }
+
+  document.querySelectorAll('.hero-logo, .nav-brand img, .welcome-logo').forEach(img => {
+    if (img.complete) stripBlackBg(img);
+    else img.addEventListener('load', () => stripBlackBg(img));
+  });
 })();
 </script>
 
