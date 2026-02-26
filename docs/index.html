@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADSR Echo | Professional Multi-Effect Plugin</title>
+  <meta name="description" content="ADSR Echo — Free, open-source multi-effect VST3/AU plugin with modular reverb, delay, EQ, compression, and convolution.">
+
+  <style>
+    /* ============================================================
+       BASE RESET & VARIABLES
+    ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:        #00aaff;
+      --blue-bright: #00d4ff;
+      --blue-dim:    #0055aa;
+      --cyan:        #00ffff;
+      --bg:          #000408;
+      --card-bg:     rgba(0, 18, 38, 0.72);
+      --text:        #ddf0ff;
+      --text-muted:  #6eaacb;
+      --border:      rgba(0, 170, 255, 0.28);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* ============================================================
+       WEBGL FRACTAL CANVAS
+    ============================================================ */
+    #fractal-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      opacity: 0.55;
+    }
+
+    /* Radial vignette to darken edges and improve readability */
+    #bg-vignette {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 40%, transparent 25%, rgba(0,2,8,0.75) 100%);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* ============================================================
+       PAGE WRAPPER
+    ============================================================ */
+    .page {
+      position: relative;
+      z-index: 2;
+      padding-bottom: 80px; /* music player height */
+    }
+
+    /* ============================================================
+       NAVIGATION
+    ============================================================ */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      height: 60px;
+      background: rgba(0, 3, 10, 0.82);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      z-index: 300;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .nav-brand img {
+      height: 36px;
+      width: auto;
+      filter: drop-shadow(0 0 8px rgba(0,180,255,0.5));
+    }
+
+    .nav-brand-name {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--blue-bright);
+    }
+
+    .nav-links {
+      list-style: none;
+      display: flex;
+      gap: 28px;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--blue-bright); }
+
+    /* ============================================================
+       HERO
+    ============================================================ */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+      padding: 80px 32px 60px;
+    }
+
+    .hero-logo {
+      width: min(280px, 58vw);
+      height: auto;
+      filter:
+        drop-shadow(0 0 24px rgba(0, 160, 255, 0.55))
+        drop-shadow(0 0 60px rgba(0, 90, 200, 0.3));
+      margin-bottom: 36px;
+      animation: float 7s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50%       { transform: translateY(-14px); }
+    }
+
+    .hero h1 {
+      font-size: clamp(2.8rem, 9vw, 6.5rem);
+      font-weight: 900;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      line-height: 0.95;
+      background: linear-gradient(135deg, #ffffff 0%, var(--blue-bright) 45%, var(--blue) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 18px rgba(0, 200, 255, 0.35));
+      margin-bottom: 10px;
+    }
+
+    .hero-sub {
+      font-size: clamp(0.8rem, 2.2vw, 1.05rem);
+      color: var(--blue-bright);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .hero-tagline {
+      font-size: clamp(0.85rem, 1.8vw, 1.05rem);
+      color: var(--text-muted);
+      max-width: 580px;
+      line-height: 1.75;
+      margin-bottom: 44px;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* ============================================================
+       BUTTONS
+    ============================================================ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 30px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--blue);
+      color: #000;
+      box-shadow: 0 0 22px rgba(0,170,255,0.4), 0 0 44px rgba(0,100,200,0.2);
+    }
+
+    .btn-primary:hover {
+      background: var(--blue-bright);
+      box-shadow: 0 0 32px rgba(0,212,255,0.65), 0 0 64px rgba(0,160,255,0.3);
+      transform: translateY(-2px);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--blue);
+      border: 1.5px solid var(--blue);
+      box-shadow: inset 0 0 12px rgba(0,170,255,0.08);
+    }
+
+    .btn-outline:hover {
+      background: rgba(0,170,255,0.08);
+      border-color: var(--blue-bright);
+      color: var(--blue-bright);
+      transform: translateY(-2px);
+    }
+
+    /* ============================================================
+       SECTIONS
+    ============================================================ */
+    .section {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 80px 32px;
+    }
+
+    .section-head {
+      text-align: center;
+      margin-bottom: 52px;
+    }
+
+    .section-head h2 {
+      font-size: clamp(1.4rem, 4vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--blue-bright);
+      margin-bottom: 8px;
+    }
+
+    .section-head p {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .divider {
+      width: 56px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--blue), transparent);
+      margin: 0 auto;
+    }
+
+    /* ============================================================
+       STATS STRIP
+    ============================================================ */
+    .stats-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 32px 80px;
+    }
+
+    .stat-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 24px 16px;
+      text-align: center;
+      backdrop-filter: blur(4px);
+    }
+
+    .stat-value {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--blue-bright);
+      display: block;
+      line-height: 1;
+      margin-bottom: 6px;
+      text-shadow: 0 0 14px rgba(0,200,255,0.45);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+    }
+
+    /* ============================================================
+       FEATURES GRID
+    ============================================================ */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 28px 26px;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+      backdrop-filter: blur(5px);
+    }
+
+    .feature-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(0,170,255,0.55);
+      box-shadow: 0 0 24px rgba(0,170,255,0.12), 0 0 48px rgba(0,100,200,0.07);
+    }
+
+    .feature-icon {
+      font-size: 2rem;
+      display: block;
+      margin-bottom: 14px;
+      filter: drop-shadow(0 0 6px rgba(0,200,255,0.4));
+    }
+
+    .feature-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--blue-bright);
+      letter-spacing: 0.04em;
+      margin-bottom: 10px;
+    }
+
+    .feature-card p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    /* ============================================================
+       DOWNLOAD SECTION
+    ============================================================ */
+    .download-cards {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .dl-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 36px 32px;
+      width: 210px;
+      text-align: center;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+      backdrop-filter: blur(5px);
+    }
+
+    .dl-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(0,170,255,0.55);
+      box-shadow: 0 0 24px rgba(0,170,255,0.14);
+    }
+
+    .dl-card .os-icon {
+      font-size: 2.8rem;
+      display: block;
+      margin-bottom: 12px;
+    }
+
+    .dl-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .dl-card .formats {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .dl-badge {
+      display: inline-block;
+      background: rgba(0,150,255,0.1);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 0.7rem;
+      color: var(--blue-bright);
+      margin-bottom: 18px;
+    }
+
+    .daw-compat {
+      margin-top: 36px;
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    /* ============================================================
+       AUTOPLAY NOTICE OVERLAY
+    ============================================================ */
+    #autoplay-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 1, 6, 0.88);
+      backdrop-filter: blur(10px);
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: opacity 0.4s ease;
+    }
+
+    #autoplay-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .autoplay-box {
+      text-align: center;
+      padding: 48px 40px;
+    }
+
+    .autoplay-ring {
+      width: 88px;
+      height: 88px;
+      border: 2px solid var(--blue);
+      border-radius: 50%;
+      margin: 0 auto 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      color: var(--blue-bright);
+      animation: pulse 2.2s ease-in-out infinite;
+      box-shadow: 0 0 0 0 rgba(0,170,255,0.4);
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0   rgba(0,170,255,0.5); transform: scale(1); }
+      50%       { box-shadow: 0 0 0 24px rgba(0,170,255,0);   transform: scale(1.04); }
+    }
+
+    .autoplay-box h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--blue-bright);
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+
+    .autoplay-box p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    /* ============================================================
+       MUSIC PLAYER BAR
+    ============================================================ */
+    #music-player {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 72px;
+      background: rgba(0, 2, 10, 0.96);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      z-index: 400;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 14px;
+    }
+
+    /* Track info */
+    .p-info {
+      display: flex;
+      flex-direction: column;
+      min-width: 140px;
+      max-width: 200px;
+      flex-shrink: 0;
+    }
+
+    .p-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .p-artist {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Control buttons */
+    .p-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .p-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      transition: all 0.18s ease;
+      line-height: 1;
+    }
+
+    .p-btn:hover {
+      color: var(--blue-bright);
+      background: rgba(0,170,255,0.1);
+    }
+
+    .p-btn.p-play {
+      width: 44px;
+      height: 44px;
+      background: var(--blue);
+      color: #000;
+      font-size: 1.1rem;
+    }
+
+    .p-btn.p-play:hover {
+      background: var(--blue-bright);
+    }
+
+    /* Progress bar */
+    .p-progress-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .p-progress-track {
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .p-progress-track:hover { height: 6px; }
+
+    .p-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--blue-dim), var(--blue-bright));
+      border-radius: 2px;
+      transition: width 0.15s linear;
+      box-shadow: 0 0 8px var(--blue);
+      pointer-events: none;
+    }
+
+    .p-times {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      line-height: 1;
+    }
+
+    /* Volume */
+    .p-volume {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    input[type="range"].p-vol-slider {
+      -webkit-appearance: none;
+      width: 76px;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.12);
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"].p-vol-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 13px; height: 13px;
+      border-radius: 50%;
+      background: var(--blue);
+      box-shadow: 0 0 6px var(--blue);
+      cursor: pointer;
+    }
+
+    input[type="range"].p-vol-slider::-moz-range-thumb {
+      width: 13px; height: 13px;
+      border-radius: 50%;
+      background: var(--blue);
+      border: none;
+      cursor: pointer;
+    }
+
+    /* Playlist panel */
+    #playlist-panel {
+      position: fixed;
+      bottom: 72px; right: 0;
+      width: 290px;
+      max-height: 360px;
+      background: rgba(0, 3, 12, 0.98);
+      border: 1px solid var(--border);
+      border-right: none;
+      border-bottom: none;
+      border-top-left-radius: 8px;
+      overflow-y: auto;
+      z-index: 399;
+      display: none;
+    }
+
+    #playlist-panel.open { display: block; }
+
+    .pl-header {
+      padding: 13px 16px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--blue-bright);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: rgba(0, 3, 12, 0.98);
+    }
+
+    .pl-item {
+      padding: 11px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(0,170,255,0.05);
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pl-item:hover { background: rgba(0,170,255,0.06); }
+
+    .pl-item.active {
+      background: rgba(0,170,255,0.1);
+      border-left: 2px solid var(--blue);
+    }
+
+    .pl-num {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      min-width: 18px;
+    }
+
+    .pl-info { flex: 1; overflow: hidden; }
+
+    .pl-track-title {
+      font-size: 0.82rem;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pl-track-artist {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #000; }
+    ::-webkit-scrollbar-thumb { background: var(--blue-dim); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--blue); }
+
+    /* ============================================================
+       FOOTER
+    ============================================================ */
+    footer {
+      text-align: center;
+      padding: 40px 24px 100px;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.8;
+    }
+
+    footer a {
+      color: var(--blue);
+      text-decoration: none;
+    }
+
+    footer a:hover { color: var(--blue-bright); }
+
+    /* ============================================================
+       RESPONSIVE
+    ============================================================ */
+    @media (max-width: 720px) {
+      nav { padding: 0 18px; }
+      .nav-links { display: none; }
+      .section { padding: 56px 18px; }
+      .stats-strip { padding: 0 18px 56px; }
+      .p-info { min-width: 100px; max-width: 130px; }
+      input[type="range"].p-vol-slider { width: 52px; }
+      #music-player { padding: 0 10px; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     WEBGL FRACTAL BACKGROUND
+============================================================ -->
+<canvas id="fractal-canvas"></canvas>
+<div id="bg-vignette"></div>
+
+<!-- ============================================================
+     AUTOPLAY OVERLAY
+============================================================ -->
+<div id="autoplay-overlay" onclick="dismissOverlay()">
+  <div class="autoplay-box">
+    <div class="autoplay-ring">▶</div>
+    <h2>Enter the Echo</h2>
+    <p>Click anywhere to begin</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     NAVIGATION
+============================================================ -->
+<nav>
+  <a href="#home" class="nav-brand">
+    <img src="logo.png" alt="ADSR Echo" onerror="this.style.display='none'">
+    <span class="nav-brand-name">ADSR Echo</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#download">Download</a></li>
+    <li><a href="https://github.com/charlesjorge357/ADSREchoVST" target="_blank" rel="noopener">GitHub</a></li>
+  </ul>
+</nav>
+
+<!-- ============================================================
+     PAGE CONTENT
+============================================================ -->
+<main class="page">
+
+  <!-- HERO -->
+  <section class="hero" id="home">
+    <img src="logo.png" alt="ADSR Echo" class="hero-logo" onerror="this.style.display='none'">
+    <h1>ADSR Echo</h1>
+    <p class="hero-sub">Multi-Effect Audio Plugin</p>
+    <p class="hero-tagline">
+      Professional modular effects suite for VST3 &amp; AU. Chain reverb, delay, EQ, compression,
+      and convolution in any order across two parallel channels.
+    </p>
+    <div class="hero-cta">
+      <a href="#download" class="btn btn-primary">⬇&nbsp; Download Free</a>
+      <a href="https://github.com/charlesjorge357/ADSREchoVST" target="_blank" rel="noopener" class="btn btn-outline">View on GitHub</a>
+    </div>
+  </section>
+
+  <!-- STATS STRIP -->
+  <div class="stats-strip">
+    <div class="stat-box">
+      <span class="stat-value">2</span>
+      <span class="stat-label">Parallel Chains</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-value">8</span>
+      <span class="stat-label">Slots Per Chain</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-value">40+</span>
+      <span class="stat-label">Impulse Responses</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-value">5</span>
+      <span class="stat-label">Effect Types</span>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <div class="section" id="features">
+    <div class="section-head">
+      <h2>What's Inside</h2>
+      <p>Every tool you need — nothing you don't</p>
+      <div class="divider"></div>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <span class="feature-icon">🌊</span>
+        <h3>Algorithmic Reverb</h3>
+        <p>Two premium algorithms: <strong style="color:var(--text)">Datorro Hall</strong> for lush, organic room simulation and <strong style="color:var(--text)">Hybrid Plate</strong> for dense, smooth reflections.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">⏱</span>
+        <h3>Advanced Delay</h3>
+        <p>BPM-synced delay with <strong style="color:var(--text)">Normal</strong>, <strong style="color:var(--text)">Ping-Pong</strong>, and <strong style="color:var(--text)">Inverted</strong> modes. Per-tail lowpass and highpass feedback filtering.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🎙</span>
+        <h3>Convolution Reverb</h3>
+        <p>40+ built-in IRs — churches, concert halls, caves, studios, and cabinets. Load your own custom IR files for infinite spaces.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🎛</span>
+        <h3>3-Band EQ</h3>
+        <p>Parametric equalizer with fully independent low, mid, and high band control. Sculpt the tonal character of any effect.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📉</span>
+        <h3>Optical Compressor</h3>
+        <p>Smooth optical-style compression with natural dynamic response — tames transients without harshness or pumping artifacts.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">⛓</span>
+        <h3>Modular Effect Chain</h3>
+        <p>Two parallel processing chains, up to 8 slots each. Stack, reorder, bypass, or combine any effects in any configuration you want.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOWNLOAD -->
+  <div class="section" id="download">
+    <div class="section-head">
+      <h2>Download</h2>
+      <p>Free forever &nbsp;·&nbsp; Open source under GPLv3</p>
+      <div class="divider"></div>
+    </div>
+    <div class="download-cards">
+
+      <div class="dl-card">
+        <span class="os-icon">🪟</span>
+        <h3>Windows</h3>
+        <div class="formats">VST3 &nbsp;·&nbsp; x64</div>
+        <span class="dl-badge">Windows 10+</span><br>
+        <a href="https://github.com/charlesjorge357/ADSREchoVST/releases/latest"
+           target="_blank" rel="noopener"
+           class="btn btn-primary" style="padding:10px 18px; font-size:0.8rem;">
+          ⬇ &nbsp;Download .exe
+        </a>
+      </div>
+
+      <div class="dl-card">
+        <span class="os-icon">🍎</span>
+        <h3>macOS</h3>
+        <div class="formats">VST3 + AU &nbsp;·&nbsp; Universal</div>
+        <span class="dl-badge">macOS 10.13+</span><br>
+        <a href="https://github.com/charlesjorge357/ADSREchoVST/releases/latest"
+           target="_blank" rel="noopener"
+           class="btn btn-primary" style="padding:10px 18px; font-size:0.8rem;">
+          ⬇ &nbsp;Download .pkg
+        </a>
+      </div>
+
+      <div class="dl-card">
+        <span class="os-icon">🐧</span>
+        <h3>Linux</h3>
+        <div class="formats">VST3 &nbsp;·&nbsp; x64</div>
+        <span class="dl-badge">Ubuntu 20.04+</span><br>
+        <a href="https://github.com/charlesjorge357/ADSREchoVST/releases/latest"
+           target="_blank" rel="noopener"
+           class="btn btn-outline" style="padding:10px 18px; font-size:0.8rem;">
+          ⬇ &nbsp;Download .tar.gz
+        </a>
+      </div>
+
+    </div>
+
+    <p class="daw-compat">
+      Compatible with <strong style="color:var(--text)">FL Studio</strong>,
+      <strong style="color:var(--text)">Ableton Live</strong>,
+      <strong style="color:var(--text)">Reaper</strong>,
+      <strong style="color:var(--text)">Logic Pro</strong>,
+      <strong style="color:var(--text)">Bitwig</strong>,
+      and any VST3 / AU compatible DAW.
+    </p>
+  </div>
+
+</main>
+
+<!-- ============================================================
+     FOOTER
+============================================================ -->
+<footer>
+  <p>ADSR Echo &nbsp;·&nbsp; Open Source &nbsp;·&nbsp;
+     <a href="https://github.com/charlesjorge357/ADSREchoVST" target="_blank" rel="noopener">GitHub</a>
+     &nbsp;·&nbsp; GPLv3 License</p>
+  <p>Built with JUCE Framework</p>
+</footer>
+
+<!-- ============================================================
+     MUSIC PLAYER BAR
+============================================================ -->
+<div id="music-player">
+  <div class="p-info">
+    <span class="p-title" id="p-title">No Track</span>
+    <span class="p-artist" id="p-artist">—</span>
+  </div>
+
+  <div class="p-controls">
+    <button class="p-btn" title="Previous" onclick="prevTrack()">⏮</button>
+    <button class="p-btn p-play" id="btn-play" title="Play / Pause" onclick="togglePlay()">▶</button>
+    <button class="p-btn" title="Next" onclick="nextTrack()">⏭</button>
+  </div>
+
+  <div class="p-progress-wrap">
+    <div class="p-progress-track" id="progress-track" onclick="seekTo(event)">
+      <div class="p-progress-fill" id="progress-fill"></div>
+    </div>
+    <div class="p-times">
+      <span id="t-cur">0:00</span>
+      <span id="t-tot">0:00</span>
+    </div>
+  </div>
+
+  <div class="p-volume">
+    <button class="p-btn" id="btn-mute" title="Mute / Unmute" onclick="toggleMute()">🔊</button>
+    <input type="range" class="p-vol-slider" id="vol-slider"
+           min="0" max="1" step="0.02" value="0.7"
+           oninput="setVolume(this.value)">
+  </div>
+
+  <button class="p-btn" title="Playlist" onclick="togglePlaylist()">☰</button>
+</div>
+
+<!-- Playlist panel (slides up from player) -->
+<div id="playlist-panel">
+  <div class="pl-header">Playlist</div>
+  <div id="pl-items"></div>
+</div>
+
+<!-- Hidden audio element -->
+<audio id="audio" preload="metadata"></audio>
+
+
+<!-- ============================================================
+     SCRIPTS
+============================================================ -->
+<script>
+/* ==============================================================
+   PLAYLIST
+   ---------------------------------------------------------------
+   Add your tracks below. Place MP3/OGG files in the docs/music/
+   folder and reference them as "music/filename.mp3"
+============================================================== */
+const PLAYLIST = [
+  // { title: "Track Title",  artist: "Artist Name",  file: "music/track01.mp3" },
+  // { title: "Track Title",  artist: "Artist Name",  file: "music/track02.mp3" },
+];
+
+/* ==============================================================
+   PLAYER LOGIC
+============================================================== */
+const audio       = document.getElementById('audio');
+const btnPlay     = document.getElementById('btn-play');
+const btnMute     = document.getElementById('btn-mute');
+const pFill       = document.getElementById('progress-fill');
+const tCur        = document.getElementById('t-cur');
+const tTot        = document.getElementById('t-tot');
+const pTitle      = document.getElementById('p-title');
+const pArtist     = document.getElementById('p-artist');
+
+let trackIdx  = 0;
+let playing   = false;
+let muted     = false;
+let plOpen    = false;
+
+audio.volume = 0.7;
+
+function fmt(s) {
+  if (!isFinite(s)) return '0:00';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+function loadTrack(idx, autoplay) {
+  if (!PLAYLIST.length) return;
+  trackIdx = ((idx % PLAYLIST.length) + PLAYLIST.length) % PLAYLIST.length;
+  const t = PLAYLIST[trackIdx];
+  audio.src = t.file;
+  pTitle.textContent  = t.title;
+  pArtist.textContent = t.artist;
+  refreshPlaylistUI();
+  if (autoplay) audio.play().then(() => { playing = true; syncPlayBtn(); }).catch(() => {});
+}
+
+function togglePlay() {
+  if (!PLAYLIST.length) return;
+  if (!audio.src || audio.src === window.location.href) loadTrack(0, true);
+  else if (audio.paused) {
+    audio.play().then(() => { playing = true; syncPlayBtn(); }).catch(() => {});
+  } else {
+    audio.pause();
+    playing = false;
+    syncPlayBtn();
+  }
+}
+
+function prevTrack() { loadTrack(trackIdx - 1, playing); }
+function nextTrack() { loadTrack(trackIdx + 1, playing); }
+
+function syncPlayBtn() { btnPlay.textContent = audio.paused ? '▶' : '⏸'; }
+
+audio.addEventListener('play',  () => { playing = true;  syncPlayBtn(); });
+audio.addEventListener('pause', () => { playing = false; syncPlayBtn(); });
+audio.addEventListener('ended', () => nextTrack());
+
+audio.addEventListener('timeupdate', () => {
+  if (!audio.duration) return;
+  pFill.style.width = (audio.currentTime / audio.duration * 100) + '%';
+  tCur.textContent = fmt(audio.currentTime);
+  tTot.textContent = fmt(audio.duration);
+});
+
+function seekTo(e) {
+  const r = document.getElementById('progress-track').getBoundingClientRect();
+  if (audio.duration) audio.currentTime = ((e.clientX - r.left) / r.width) * audio.duration;
+}
+
+function setVolume(v) {
+  audio.volume = v;
+  muted = +v === 0;
+  btnMute.textContent = +v === 0 ? '🔇' : +v < 0.5 ? '🔉' : '🔊';
+}
+
+function toggleMute() {
+  muted = !muted;
+  audio.muted = muted;
+  btnMute.textContent = muted ? '🔇' : audio.volume < 0.5 ? '🔉' : '🔊';
+}
+
+function togglePlaylist() {
+  plOpen = !plOpen;
+  document.getElementById('playlist-panel').classList.toggle('open', plOpen);
+}
+
+function refreshPlaylistUI() {
+  const el = document.getElementById('pl-items');
+  if (!PLAYLIST.length) {
+    el.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.8rem;">
+      No tracks loaded.<br>Add songs to the PLAYLIST array in index.html</div>`;
+    return;
+  }
+  el.innerHTML = PLAYLIST.map((t, i) => `
+    <div class="pl-item ${i === trackIdx ? 'active' : ''}" onclick="selectTrack(${i})">
+      <span class="pl-num">${i + 1}</span>
+      <div class="pl-info">
+        <div class="pl-track-title">${escHtml(t.title)}</div>
+        <div class="pl-track-artist">${escHtml(t.artist)}</div>
+      </div>
+    </div>`).join('');
+}
+
+function selectTrack(i) { loadTrack(i, true); }
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+refreshPlaylistUI();
+
+/* Close playlist on outside click */
+document.addEventListener('click', e => {
+  if (!plOpen) return;
+  const panel  = document.getElementById('playlist-panel');
+  const player = document.getElementById('music-player');
+  if (!panel.contains(e.target) && !player.contains(e.target)) {
+    plOpen = false;
+    panel.classList.remove('open');
+  }
+});
+
+/* ==============================================================
+   AUTOPLAY OVERLAY
+============================================================== */
+const overlay = document.getElementById('autoplay-overlay');
+
+function dismissOverlay() {
+  overlay.classList.add('hidden');
+  if (PLAYLIST.length) loadTrack(0, true);
+}
+
+window.addEventListener('load', () => {
+  if (!PLAYLIST.length) {
+    overlay.classList.add('hidden');
+    return;
+  }
+  loadTrack(0, false);
+  audio.play()
+    .then(() => { playing = true; syncPlayBtn(); overlay.classList.add('hidden'); })
+    .catch(() => { /* show overlay — browser blocked autoplay */ });
+});
+
+
+/* ==============================================================
+   WEBGL FRACTAL BACKGROUND
+============================================================== */
+(function () {
+  const canvas = document.getElementById('fractal-canvas');
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  if (!gl) { canvas.style.display = 'none'; return; }
+
+  /* ---------- Vertex shader ---------- */
+  const VS = `
+    attribute vec2 pos;
+    void main() { gl_Position = vec4(pos, 0.0, 1.0); }
+  `;
+
+  /* ---------- Fragment shader — domain-warped fBM fractal ---------- */
+  const FS = `
+    precision mediump float;
+    uniform float  u_time;
+    uniform vec2   u_res;
+
+    /* Fast hash */
+    float hash(vec2 p) {
+      p = fract(p * vec2(127.1, 311.7));
+      p += dot(p, p + 19.31);
+      return fract(p.x * p.y);
+    }
+
+    /* Value noise */
+    float noise(vec2 p) {
+      vec2 i = floor(p);
+      vec2 f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      float a = hash(i);
+      float b = hash(i + vec2(1.0, 0.0));
+      float c = hash(i + vec2(0.0, 1.0));
+      float d = hash(i + vec2(1.0, 1.0));
+      return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+    }
+
+    /* Fractional Brownian Motion — 7 octaves */
+    float fbm(vec2 p) {
+      float val = 0.0;
+      float amp = 0.5;
+      mat2  rot = mat2(0.8660, 0.5, -0.5, 0.8660); /* 30° rotation */
+      for (int i = 0; i < 7; i++) {
+        val += amp * noise(p);
+        p    = rot * p * 2.01 + vec2(100.0, 100.0);
+        amp *= 0.5;
+      }
+      return val;
+    }
+
+    void main() {
+      vec2 uv = gl_FragCoord.xy / u_res;
+      float asp = u_res.x / u_res.y;
+      vec2 p = (uv * 2.0 - 1.0) * vec2(asp, 1.0);
+
+      float t = u_time * 0.07;
+
+      /* 3-pass domain warping */
+      vec2 q = vec2(
+        fbm(p                       + t * 0.50),
+        fbm(p + vec2(5.20, 1.30)    + t * 0.40)
+      );
+      vec2 r = vec2(
+        fbm(p + 1.6 * q + vec2(1.70, 9.20) + t * 0.28),
+        fbm(p + 1.6 * q + vec2(8.30, 2.80) + t * 0.22)
+      );
+      vec2 s = vec2(
+        fbm(p + 1.3 * r + vec2(3.10, 6.70) + t * 0.14),
+        fbm(p + 1.3 * r + vec2(0.40, 4.10) + t * 0.11)
+      );
+
+      float f = fbm(p + s);
+
+      /* Vignette */
+      float vig = 1.0 - smoothstep(0.4, 1.3, length(p));
+      f *= vig;
+
+      /* Electric-blue colour ramp */
+      vec3 col = vec3(0.00, 0.00, 0.02);
+      col = mix(col, vec3(0.00, 0.04, 0.22), clamp(f * 1.6,             0.0, 1.0));
+      col = mix(col, vec3(0.00, 0.28, 0.85), clamp(pow(f, 1.4) * 2.8,  0.0, 1.0));
+      col = mix(col, vec3(0.00, 0.60, 1.00), clamp(pow(f, 2.4) * 4.0,  0.0, 1.0));
+      col = mix(col, vec3(0.10, 0.82, 1.00), clamp(pow(f, 4.0) * 5.5,  0.0, 1.0));
+      col = mix(col, vec3(0.85, 0.97, 1.00), clamp(pow(f, 8.0) * 7.0,  0.0, 1.0));
+
+      /* Subtle electric pulse overlay */
+      float pulse = 0.025 * sin(u_time * 1.8 + f * 22.0) * f;
+      col += vec3(0.0, pulse, pulse * 1.8);
+
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `;
+
+  /* ---------- Compile & link ---------- */
+  function mkShader(type, src) {
+    const sh = gl.createShader(type);
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+      console.error('Shader error:', gl.getShaderInfoLog(sh));
+      return null;
+    }
+    return sh;
+  }
+
+  const prog = gl.createProgram();
+  gl.attachShader(prog, mkShader(gl.VERTEX_SHADER,   VS));
+  gl.attachShader(prog, mkShader(gl.FRAGMENT_SHADER, FS));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+
+  /* Full-screen quad */
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER,
+    new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]),
+    gl.STATIC_DRAW);
+
+  const posLoc  = gl.getAttribLocation(prog, 'pos');
+  const timeLoc = gl.getUniformLocation(prog, 'u_time');
+  const resLoc  = gl.getUniformLocation(prog, 'u_res');
+
+  gl.enableVertexAttribArray(posLoc);
+  gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+  /* Resize handler */
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  /* Render loop */
+  const t0 = performance.now();
+  (function loop() {
+    gl.uniform1f(timeLoc, (performance.now() - t0) * 0.001);
+    gl.uniform2f(resLoc, canvas.width, canvas.height);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    requestAnimationFrame(loop);
+  })();
+})();
+</script>
+
+</body>
+</html>
